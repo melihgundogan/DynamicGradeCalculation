@@ -1,5 +1,9 @@
 import 'package:dynamic_grade_calculation/constants/app_constants.dart';
+import 'package:dynamic_grade_calculation/model/lesson.dart';
 import 'package:dynamic_grade_calculation/widgets/grade_show.dart';
+import 'package:dynamic_grade_calculation/widgets/harf_dropdown_widget.dart';
+import 'package:dynamic_grade_calculation/widgets/kredi_dropdown_widget.dart';
+import 'package:dynamic_grade_calculation/widgets/lesson_list.dart';
 import 'package:flutter/material.dart';
 import 'package:dynamic_grade_calculation/helper/data.dart';
 
@@ -14,10 +18,11 @@ class _GradeCalculationState extends State<GradeCalculation> {
   var formKey = GlobalKey<FormState>();
   double secilenHarfDeger = 4;
   double secilenKrediDeger = 1;
-
+  String girilenDersAdi = "";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -36,16 +41,19 @@ class _GradeCalculationState extends State<GradeCalculation> {
               Expanded(flex: 2, child: _buildForm()),
               Expanded(
                 flex: 1,
-                child: GradeShow(average: 5, numberOfLessons: 0),
+                child: GradeShow(
+                    average: DataHelper.ortalamaHesapla(),
+                    numberOfLessons: DataHelper.tumEklenenDersler.length),
               ),
             ],
           ),
-          Expanded(
-            child: Container(
-              child: Text("Liste buraya gelecek"),
-              color: Colors.blue,
-            ),
-          ),
+          Expanded(child: LessonList(
+            onElemanCikarildi: (index) {
+              DataHelper.tumEklenenDersler.removeAt(index);
+              print("Eleman çıkarıldı index: $index");
+              setState(() {});
+            },
+          )),
         ],
       ),
     );
@@ -56,7 +64,10 @@ class _GradeCalculationState extends State<GradeCalculation> {
       key: formKey,
       child: Column(
         children: [
-          Padding(padding: Sabitler.yatayPadding8, child: _buildTextFormField(),),
+          Padding(
+            padding: Sabitler.yatayPadding8,
+            child: _buildTextFormField(),
+          ),
           SizedBox(
             height: 5,
           ),
@@ -65,22 +76,29 @@ class _GradeCalculationState extends State<GradeCalculation> {
             children: [
               Expanded(
                 child: Padding(
-                  padding: Sabitler.yatayPadding8, 
-                    child: _buildHarfler(),
+                  padding: Sabitler.yatayPadding8,
+                  child: HarfDropDownWidget(
+                    onHarfSecildi: (harf) {
+                      secilenHarfDeger = harf;
+                    },
+                  ),
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: Sabitler.yatayPadding8, 
-                    child: _buildKrediler(),
+                  padding: Sabitler.yatayPadding8,
+                  child: KrediDropDownWidget(
+                    onKrediSecildi: (kredi) {
+                      secilenKrediDeger = kredi;
+                    },
+                  ),
                 ),
               ),
-              
               IconButton(
-                onPressed: () {}, 
+                onPressed: _dersEkleveOrtalamaHesapla,
                 icon: Icon(Icons.arrow_forward_ios_sharp),
                 color: Sabitler.primaryColor,
-                iconSize: 30,  
+                iconSize: 30,
               ),
             ],
           ),
@@ -94,58 +112,36 @@ class _GradeCalculationState extends State<GradeCalculation> {
 
   _buildTextFormField() {
     return TextFormField(
+      onSaved: (deger) {
+        setState(() {
+          girilenDersAdi = deger!;
+        });
+      },
+      validator: (s) {
+        if (s!.length <= 0) {
+          return "Ders Adını Giriniz";
+        } else
+          return null;
+      },
       decoration: InputDecoration(
         hintText: "Matematik",
-        border: OutlineInputBorder(borderRadius: Sabitler.borderRadius, borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: Sabitler.borderRadius, borderSide: BorderSide.none),
         filled: true,
         fillColor: Sabitler.primaryColor.shade100.withOpacity(0.3),
       ),
     );
   }
 
-  _buildHarfler() {
-    return Container(
-      alignment: Alignment.center,
-      padding: Sabitler.dropDownPadding,
-      decoration: BoxDecoration(
-        color: Sabitler.primaryColor.shade100.withOpacity(0.3),
-        borderRadius: Sabitler.borderRadius,
-      ),
-      child: DropdownButton<double>(
-        value: secilenHarfDeger,
-        elevation: 16,
-        iconEnabledColor: Sabitler.primaryColor.shade200,
-        onChanged: (deger) {
-          setState(() {
-            secilenHarfDeger = deger!;
-          });
-        },
-        underline: Container(),
-        items: DataHelper.tumDersHarfleri(),
-      ),
-    );
-  }
-
-  _buildKrediler() {
-    return Container(
-      alignment: Alignment.center,
-      padding: Sabitler.dropDownPadding,
-      decoration: BoxDecoration(
-        color: Sabitler.primaryColor.shade100.withOpacity(0.3),
-        borderRadius: Sabitler.borderRadius,
-      ),
-      child: DropdownButton<double>(
-        value: secilenKrediDeger,
-        elevation: 16,
-        iconEnabledColor: Sabitler.primaryColor.shade200,
-        onChanged: (deger) {
-          setState(() {
-            secilenKrediDeger = deger!;
-          });
-        },
-        underline: Container(),
-        items: DataHelper.tumKrediler(),
-      ),
-    );
+  void _dersEkleveOrtalamaHesapla() {
+    if (formKey.currentState!.validate()) {
+      formKey.currentState!.save();
+      var eklenecekDers = Lesson(
+          ad: girilenDersAdi,
+          harfDegeri: secilenHarfDeger,
+          krediDegeri: secilenKrediDeger);
+      DataHelper.dersEkle(eklenecekDers);
+      setState(() {});
+    }
   }
 }

@@ -1,7 +1,27 @@
+import 'dart:math';
+
+import 'package:dynamic_grade_calculation/model/lesson.dart';
 import 'package:flutter/material.dart';
 
 class DataHelper {
-  
+  static List<Lesson> tumEklenenDersler = [];
+
+  static dersEkle(Lesson lesson) {
+    tumEklenenDersler.add(lesson);
+  }
+
+  static double ortalamaHesapla() {
+    double toplamNot = 0;
+    double toplamKredi = 0;
+
+    tumEklenenDersler.forEach((element) {
+      toplamNot = toplamNot + (element.krediDegeri * element.harfDegeri);
+      toplamKredi += element.krediDegeri;
+    });
+
+    return toplamNot / toplamKredi;
+  }
+
   static List<String> _createDersHarfNotlari() {
     return ['AA', 'BA', 'BB', 'CB', 'CC', 'DC', 'DD', 'FD', 'FF'];
   }
